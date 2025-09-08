@@ -714,5 +714,12 @@
       "prompt": "content"
     },
     "folder": "python"
+  },
+  "adgen_local": {
+    "file_name": "AdvertiseGen/train.json",
+    "columns": {
+      "prompt": "content",
+      "response": "summary"
+    }
   }
 }

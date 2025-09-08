@@ -1,0 +1,33 @@
+### dataset
+template: qwen
+cutoff_len: 2048
+# 开启样本打包：将多条短样本拼到同一序列中，显著降低 padding 浪费、提升 GPU 利用率
+packing: true  # 新增：若数据长度分布偏短，收益更明显
+
+### output
+report_to: swanlab
+
+### train
+# 1) 提升单卡 batch；2) 相应降低累积步，保持总体等效 batch ≈ 原来的 8
+per_device_train_batch_size: 4   # 从 1 → 4（24GB + LoRA + bf16 + flash_attn 通常可承载）
+gradient_accumulation_steps: 2   # 从 8 → 2（等效 batch 仍≈8，提升单步算力利用）
+
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+
+# 高效算子与内存/编译优化
+flash_attn: auto                 # 新增：自动使用可用的 Flash Attention（fa2/SDPA）
+optim: adamw_torch_fused         # 新增：融合版 AdamW，提升 step 吞吐
+tf32: true                       # 新增：开启 TF32（4090 支持），提升 matmul 吞吐（对精度影响极小）
+gradient_checkpointing: false    # 先设为 false；若后续 OOM，再改为 true 以换取更大 batch
+
+# 数据供给并行
+preprocessing_num_workers: 16
+dataloader_num_workers: 8        # 从 4 → 8，减轻数据加载瓶颈
+dataloader_pin_memory: true      # 新增：固定页内存，加速主机到 GPU 的拷贝
+
+ddp_timeout: 180000000
+resume_from_checkpoint: null

@@ -1,0 +1,65 @@
+### model
+# 使用的基础模型（请根据你的模型实际仓库名确认，例如：Qwen/Qwen2.5-1.5B-Instruct 或 Qwen/Qwen2.5-1.5B）
+# 如果你确认为 "qwen3-1.7b" 的具体模型 ID，请替换下方占位。
+model_name_or_path: /root/.cache/modelscope/hub/models/Qwen/Qwen3-1.7B  # TODO: 若为 qwen3-1.7b，请替换为对应的 HuggingFace 模型名
+trust_remote_code: true  # Qwen 家族通常需要开启以使用自定义模型代码
+
+### method
+stage: sft  # 监督微调阶段
+do_train: true  # 开启训练
+finetuning_type: lora  # 使用 LoRA 进行高效微调
+lora_rank: 8  # LoRA 秩，控制可训练参数规模与效果/显存的平衡
+lora_target: all  # 目标模块；对 Qwen 通常保留 all 即可（也可按需指定）
+
+### dataset
+# 训练集与模板。模板对齐 Qwen 的对话格式（system/user/assistant）。
+dataset: alpaca_gpt4_zh,identity,adgen_local  # 示例数据集；请替换为你的真实数据集名称
+template: qwen  # 关键：Qwen 使用 qwen 模板对齐其对话格式
+cutoff_len: 2048  # 单条样本最大长度（token）
+max_samples: 1000  # 仅作示例；实际可去掉该限制或调大
+overwrite_cache: true  # 变更数据/模板后建议刷新数据缓存
+# preprocessing_num_workers: 16  # 数据预处理并行度
+# dataloader_num_workers: 4  # DataLoader 进程数
+
+### output
+# 输出目录建议以模型名区分，避免与 llama3 混淆
+output_dir: /root/autodl-tmp/Qwen3_lora  # 保存权重、日志等的输出路径
+logging_steps: 10  # 日志间隔（step）
+save_steps: 500  # 保存间隔（step）
+plot_loss: true  # 训练结束绘制 loss 曲线
+overwrite_output_dir: true  # 若目录存在则覆盖
+save_only_model: false  # 保存完整训练状态（包含优化器等），便于续训
+report_to: swanlab
+
+### train
+# 1) 提升单卡 batch；2) 相应降低累积步，保持总体等效 batch ≈ 原来的 8
+per_device_train_batch_size: 8   # 从 1 → 8（24GB + LoRA + bf16 + flash_attn 通常可承载）
+gradient_accumulation_steps: 2   # 从 8 → 2（等效 batch 仍≈8，提升单步算力利用）
+
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+
+# 高效算子与内存/编译优化
+flash_attn: auto                 # 新增：自动使用可用的 Flash Attention（fa2/SDPA）
+optim: adamw_torch_fused         # 新增：融合版 AdamW，提升 step 吞吐
+tf32: true                       # 新增：开启 TF32（4090 支持），提升 matmul 吞吐（对精度影响极小）
+gradient_checkpointing: false    # 先设为 false；若后续 OOM，再改为 true 以换取更大 batch
+
+# 数据供给并行
+preprocessing_num_workers: 16
+dataloader_num_workers: 8        # 从 4 → 8，减轻数据加载瓶颈
+dataloader_pin_memory: true      # 新增：固定页内存，加速主机到 GPU 的拷贝
+
+ddp_timeout: 180000000
+resume_from_checkpoint: null
+
+### eval
+# 按需启用验证集与评估策略
+# eval_dataset: alpaca_en_demo
+# val_size: 0.1
+# per_device_eval_batch_size: 1
+# eval_strategy: steps
+# eval_steps: 500 
