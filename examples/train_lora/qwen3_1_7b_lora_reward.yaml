@@ -1,0 +1,71 @@
+### model
+# 基础模型：Qwen3 1.7B（如使用其他规格，请替换模型路径/ID）
+# 可使用 HuggingFace Hub 模型名（如：Qwen/Qwen3-1.7B-Instruct）或本地缓存路径。
+# 注意：奖励模型训练（stage: rm）仍基于语言模型做打分头的训练，需与后续 PPO 使用的模板尽量一致。
+model_name_or_path: /root/.cache/modelscope/hub/models/Qwen/Qwen3-1.7B
+trust_remote_code: true  # Qwen 系列通常需要开启
+
+### method
+# 训练阶段：rm（Reward Model，奖励模型）
+stage: rm
+# 是否进行训练
+do_train: true
+# 使用 LoRA 进行高效微调
+finetuning_type: lora
+# LoRA 关键超参：
+lora_rank: 8
+lora_target: all
+
+### dataset
+# 奖励模型通常使用偏好数据（如 dpo/dataset 结构中包含 chosen/rejected）。
+# 这里示例使用中文偏好/对话演示集，可替换为你的真实数据集名称。
+dataset: dpo_zh_demo
+# 模板需与后续 PPO 训练、推理保持一致（Qwen 使用 qwen 模板）
+template: qwen
+# 单条样本长度限制（token）
+cutoff_len: 2048
+# 为演示限制样本量，正式训练建议去掉或调大该值
+max_samples: 1000
+# 数据或模板变动后建议刷新缓存
+overwrite_cache: true
+# 数据处理与加载并行度（按硬件与 IO 实况调整）
+preprocessing_num_workers: 16
+dataloader_num_workers: 4
+
+### output
+# 输出目录：建议按照模型名与方法组织，便于区分
+overwrite_output_dir: true
+output_dir: /root/autodl-tmp/Qwen3_rm
+# 日志与保存间隔
+logging_steps: 10
+save_steps: 500
+# 训练结束绘制 loss 曲线
+plot_loss: true
+# 是否仅保存模型（false 将保存优化器与调度器，便于续训）
+save_only_model: false
+# 日志上报后端（可选：none, wandb, tensorboard, swanlab, mlflow）
+report_to: swanlab
+
+### train
+# Batch 与累计步：根据显存实际调整
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+# 学习率与调度器
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+# 精度与分布式
+bf16: true
+# 多卡超时（如使用分布式训练）
+ddp_timeout: 180000000
+# 续训检查点（如无则保持 null）
+resume_from_checkpoint: null
+
+### eval
+# 可按需启用评估与验证集
+eval_dataset: dpo_zh_demo
+val_size: 0.1
+per_device_eval_batch_size: 1
+eval_strategy: steps
+eval_steps: 500 

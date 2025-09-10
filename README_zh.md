@@ -325,7 +325,7 @@ https://github.com/user-attachments/assets/43b700c6-a178-41db-b1f8-8190a5d3fcfc
 | [Yuan 2](https://huggingface.co/IEITYuan)                         | 2B/51B/102B                      | yuan                |
 
 > [!NOTE]
-> 对于所有“基座”（Base）模型，`template` 参数可以是 `default`, `alpaca`, `vicuna` 等任意值。但“对话”（Instruct/Chat）模型请务必使用**对应的模板**。
+> 对于所有"基座"（Base）模型，`template` 参数可以是 `default`, `alpaca`, `vicuna` 等任意值。但"对话"（Instruct/Chat）模型请务必使用**对应的模板**。
 >
 > 请务必在训练和推理时采用**完全一致**的模板。
 >
@@ -961,3 +961,32 @@ swanlab_run_name: test_run # 可选
 ## Star History
 
 ![Star History Chart](https://api.star-history.com/svg?repos=hiyouga/LLaMA-Factory&type=Date)
+
+## 变更记录（本地会话）
+- 新增 Qwen3 PPO LoRA 训练配置：`examples/train_lora/qwen3_1_7b_lora_ppo.yaml`
+  - 适配 `template: qwen`、示例数据集 `dpo_zh_demo,identity`
+  - 默认模型：`/root/.cache/modelscope/hub/models/Qwen/Qwen3-1.7B`（可改为 `Qwen/Qwen3-1.7B-Instruct` 等）
+  - 奖励模型占位：`saves/qwen3-1_7b/lora/reward`（请替换为已训练的 RM）
+  - 训练阶段：`stage: ppo`，LoRA：`rank=8, target=all`
+
+### 使用方式（示例）
+```bash
+# 运行 PPO 训练（示例）
+llamafactory-cli train \
+  --config_file examples/train_lora/qwen3_1_7b_lora_ppo.yaml
+```
+
+> 提示：请根据你的硬件/数据实际情况，调整 `per_device_train_batch_size`、`gradient_accumulation_steps`、`learning_rate`、`output_dir` 以及 `reward_model` 路径。
+
+- 新增 Qwen3 奖励模型（RM）LoRA 训练配置：`examples/train_lora/qwen3_1_7b_lora_reward.yaml`
+  - `stage: rm`，`template: qwen`，示例数据集 `dpo_zh_demo`
+  - 默认模型：`/root/.cache/modelscope/hub/models/Qwen/Qwen3-1.7B`
+  - 输出目录：`saves/qwen3-1_7b/lora/reward`
+
+```bash
+# 训练 Qwen3 奖励模型（RM）示例
+llamafactory-cli train \
+  --config_file examples/train_lora/qwen3_1_7b_lora_reward.yaml
+```
+
+</details>

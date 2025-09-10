@@ -1,0 +1,80 @@
+### model
+# 基础模型：Qwen3 1.7B（如使用其他规格，请替换模型路径/ID）
+# 你可以使用 HuggingFace Hub 的模型名（如：Qwen/Qwen3-1.7B-Instruct）
+# 或本地缓存路径。确保与下方 template: qwen 对齐。
+model_name_or_path: /root/.cache/modelscope/hub/models/Qwen/Qwen3-1.7B
+trust_remote_code: true  # Qwen 家族通常需要开启自定义代码
+
+### method
+# 训练阶段：PPO（基于奖励模型的强化学习）
+stage: ppo
+# 是否进行训练
+do_train: true
+# 微调方式：LoRA（高效参数微调）
+finetuning_type: lora
+# LoRA 关键超参：秩与目标模块
+lora_rank: 8
+lora_target: all
+
+# 奖励模型：用于对生成进行打分
+# 建议使用与指令模型相近的 tokenizer/模板，以减少对齐偏差
+reward_model: saves/qwen3-1_7b/lora/reward  # 若无，可先训练或改为已存在RM路径
+
+### dataset
+# PPO 常用对话/偏好数据。这里示例使用中文偏好/对话数据集合。
+# 你可以替换为你自己的数据集名称（需在 LLaMA-Factory 数据注册里存在）。
+dataset: dpo_zh_demo,identity
+# 模板：Qwen 模板，确保对话格式(system/user/assistant)对齐
+template: qwen
+# 单条样本最大长度（token）
+cutoff_len: 2048
+# 采样条数上限（演示用途）；正式训练建议去掉或调大
+max_samples: 1000
+# 变更数据/模板后建议刷新缓存
+overwrite_cache: true
+# 数据处理并行度与 DataLoader 线程数
+preprocessing_num_workers: 16
+dataloader_num_workers: 8
+
+### output
+# 输出目录：建议带上模型名与方法，便于区分
+overwrite_output_dir: true
+output_dir: /root/autodl-tmp/qwen3-1_7b/lora/ppo
+# 日志与保存间隔
+logging_steps: 10
+save_steps: 500
+# 训练结束绘制 loss 曲线（PPO 也会记录策略/价值等标量）
+plot_loss: true
+# 可选上报：none, wandb, tensorboard, swanlab, mlflow
+report_to: swanlab
+# 是否仅保存模型参数（false 将包含优化器与调度器，便于续训）
+save_only_model: false
+
+### train
+# 为了显存与吞吐平衡，单卡 batch 可适当提升，同时调整累计步保持等效 batch
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 4  # 等效 batch ≈ 8（2 x 4）
+# 学习率与调度
+learning_rate: 1.0e-5
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+# 精度与加速
+bf16: true
+# 高效算子与优化器
+flash_attn: auto               # 自动选择可用的 FlashAttention/SDPA
+optim: adamw_torch_fused       # 融合 AdamW
+tf32: true                     # 适配支持 TF32 的显卡（如 30/40 系）
+# 显存优化：如 OOM 可开启梯度检查点
+gradient_checkpointing: false
+# DDP 超时（多卡时生效）
+ddp_timeout: 180000000
+resume_from_checkpoint: null
+
+### generate
+# 生成时的采样超参（用于 PPO 交互环节）
+max_new_tokens: 512
+# top_k=0 通常表示不启用 top-k 过滤
+top_k: 0
+# 典型 nucleus 采样阈值
+top_p: 0.9 
