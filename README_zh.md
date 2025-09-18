@@ -989,4 +989,19 @@ llamafactory-cli train \
   --config_file examples/train_lora/qwen3_1_7b_lora_reward.yaml
 ```
 
+- 更新：PPO 配置示例改为使用 LoRA 奖励模型
+  - `examples/train_lora/qwen3_1_7b_lora_ppo.yaml`
+    - `reward_model: /root/autodl-tmp/Qwen3_rm`
+    - `reward_model_type: lora`
+  - 说明：当奖励模型是 LoRA 产出目录（包含 `adapter_model.safetensors`、`value_head.safetensors` 等）时，需将 `reward_model_type` 设为 `lora`，否则会按 full 权重加载，导致找不到权重或显存占用异常。
+
+- 代码注释增强：在 `src/llamafactory/train/ppo/trainer.py` 中为 `get_inputs` 与 `get_rewards` 增加了中文注释
+  - 解释生成阶段的显存/性能考量与去 pad 逻辑
+  - 解释奖励模型在 LoRA 模式下的适配器切换与显存复用机制
+
+- 文档化增强：`src/llamafactory/train/ppo/trainer.py` 全文件新增中文注释
+  - 概述 PPO 流程与多模型（policy/ref/reward/value）关系
+  - 解释显存开销来源与 LoRA 奖励模型的适配器切换机制
+  - 训练主循环、生成阶段、奖励计算、前向分片与保存流程的关键说明
+
 </details>

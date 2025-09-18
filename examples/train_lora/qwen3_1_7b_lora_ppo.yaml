@@ -18,12 +18,14 @@ lora_target: all
 
 # 奖励模型：用于对生成进行打分
 # 建议使用与指令模型相近的 tokenizer/模板，以减少对齐偏差
-reward_model: saves/qwen3-1_7b/lora/reward  # 若无，可先训练或改为已存在RM路径
+# reward_model: saves/qwen3-1_7b/lora/reward  # 若无，可先训练或改为已存在RM路径
+reward_model: /root/autodl-tmp/Qwen3_rm  # 使用已训练的 RM（LoRA 目录）
+reward_model_type: lora                  # 显式声明 RM 类型为 LoRA
 
 ### dataset
 # PPO 常用对话/偏好数据。这里示例使用中文偏好/对话数据集合。
 # 你可以替换为你自己的数据集名称（需在 LLaMA-Factory 数据注册里存在）。
-dataset: dpo_zh_demo,identity
+dataset: alpaca_gpt4_zh,identity
 # 模板：Qwen 模板，确保对话格式(system/user/assistant)对齐
 template: qwen
 # 单条样本最大长度（token）
@@ -46,7 +48,7 @@ save_steps: 500
 # 训练结束绘制 loss 曲线（PPO 也会记录策略/价值等标量）
 plot_loss: true
 # 可选上报：none, wandb, tensorboard, swanlab, mlflow
-report_to: swanlab
+report_to: none
 # 是否仅保存模型参数（false 将包含优化器与调度器，便于续训）
 save_only_model: false
 
