@@ -58,6 +58,10 @@ from trl.core import PPODecorators, logprobs_from_logits
 from trl.models.utils import unwrap_model_for_generation
 from typing_extensions import override
 
+from transformers import logging
+# 只顯示錯誤訊息
+logging.set_verbosity_error()
+
 from ...extras import logging
 from ...extras.misc import AverageMeter, count_parameters, get_current_device, get_logits_processor
 from ..callbacks import FixValueHeadModelCallback, SaveProcessorCallback
@@ -298,6 +302,20 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
                 queries.extend(mini_batch_queries)
                 responses.extend(mini_batch_responses)
                 rewards.extend(mini_batch_rewards)
+                # ===================== 动手修改 1 =====================
+                # 只在主进程打印，避免多卡时信息刷屏
+                if self.is_world_process_zero():
+                    # 解码第一个样本的 query 和 response
+                    decoded_query = self.tokenizer.decode(queries[0], skip_special_tokens=True)
+                    decoded_response = self.tokenizer.decode(responses[0], skip_special_tokens=True)
+                    
+                    print("\n" + "="*50)
+                    print(f"--- Step: {step}, Sample 0 ---")
+                    print(f"Query: {decoded_query}")
+                    print(f"Generated Response: {decoded_response}")
+                    print(f"Raw Reward Score: {rewards[0].item()}") # 打印第一个样本的奖励值
+                    print("="*50 + "\n")
+                # ===================== 动手修改 1 =====================
 
             # 2) PPO 更新：切回 train 模式，计算 PPO loss 并反传/更新
             self.model.train()

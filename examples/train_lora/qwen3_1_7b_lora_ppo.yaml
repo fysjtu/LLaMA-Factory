@@ -54,8 +54,8 @@ save_only_model: false
 
 ### train
 # 为了显存与吞吐平衡，单卡 batch 可适当提升，同时调整累计步保持等效 batch
-per_device_train_batch_size: 2
-gradient_accumulation_steps: 4  # 等效 batch ≈ 8（2 x 4）
+per_device_train_batch_size: 8
+gradient_accumulation_steps: 2  # 等效 batch ≈ 8（2 x 4）
 # 学习率与调度
 learning_rate: 1.0e-5
 num_train_epochs: 3.0
@@ -68,7 +68,7 @@ flash_attn: auto               # 自动选择可用的 FlashAttention/SDPA
 optim: adamw_torch_fused       # 融合 AdamW
 tf32: true                     # 适配支持 TF32 的显卡（如 30/40 系）
 # 显存优化：如 OOM 可开启梯度检查点
-gradient_checkpointing: false
+gradient_checkpointing: true
 # DDP 超时（多卡时生效）
 ddp_timeout: 180000000
 resume_from_checkpoint: null
